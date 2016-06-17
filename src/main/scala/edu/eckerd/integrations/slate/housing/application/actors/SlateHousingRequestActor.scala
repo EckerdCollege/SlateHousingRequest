@@ -48,6 +48,9 @@ class SlateHousingRequestActor extends Actor with ActorLogging with HousingReque
       log.info("Got Good Status Code Reply")
     case HttpResponse(code, _, _, _) =>
       log.error("Invalid Status Code: " + code)
+    case HousingRequestResponse(list) =>
+      list.foreach(t => log.info(t.toString))
+      context.system.terminate()
     case a =>
       log.error(a.toString)
       log.error("Unknown Message Received")
