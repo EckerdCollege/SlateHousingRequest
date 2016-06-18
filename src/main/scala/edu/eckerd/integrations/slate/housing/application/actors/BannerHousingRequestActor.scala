@@ -15,10 +15,13 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
 
   override def preStart() = {
     self ! EchoStart
+    context.parent ! SupervisorActor.PidmRequest(id)
   }
 
   def receive() = {
     case EchoStart => log.info(s"BHR Start: $id - $termCode")
+    case Pidm(pidm) =>
+      log.info(s"BHR: pidm - $pidm")
     case a =>
       log.error(a.toString)
       log.error("Unknown Message Received")
@@ -49,5 +52,6 @@ object BannerHousingRequestActor {
   )
 
   case object EchoStart
+  case class Pidm(pidm: Int)
   case class BannerHousingRequest(pidm: Int, termCode: String)
 }

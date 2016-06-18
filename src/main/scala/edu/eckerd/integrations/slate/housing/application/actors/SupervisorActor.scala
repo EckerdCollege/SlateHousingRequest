@@ -9,6 +9,8 @@ import edu.eckerd.integrations.slate.housing.application.models.HousingRequestRe
 class SupervisorActor extends Actor with ActorLogging {
   import SupervisorActor._
 
+  val getPidmActor = context.actorOf(GetPidmActor.props, "GetPidm")
+
   def receive() = {
     case Request(link, userName, password) =>
       context.actorOf(
@@ -31,6 +33,8 @@ class SupervisorActor extends Actor with ActorLogging {
           name = s"BHRA-${HousingRequest.id}"
         )
       }
+    case PidmRequest(id) =>
+      getPidmActor.tell( GetPidmActor.ID(id), sender() )
     case TerminateSys =>
       context.system.terminate()
   }
@@ -39,5 +43,6 @@ class SupervisorActor extends Actor with ActorLogging {
 object SupervisorActor {
   val props = Props[SupervisorActor]
   case object TerminateSys
+  case class PidmRequest(id: String)
   case class Request(link: String, userName: String, password: String)
 }

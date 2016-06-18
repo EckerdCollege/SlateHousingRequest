@@ -51,9 +51,11 @@ class SlateHousingRequestActor(link: String, userName: String, password: String)
       http.shutdownAllConnectionPools()
     case HttpResponse(code, _, _, _) =>
       log.error("Invalid Status Code: " + code)
+      http.shutdownAllConnectionPools()
     case a =>
       log.error(a.toString)
       log.error("Unknown Message Received")
+      http.shutdownAllConnectionPools()
   }
 }
 
