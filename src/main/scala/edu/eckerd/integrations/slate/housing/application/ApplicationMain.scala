@@ -14,9 +14,9 @@ object ApplicationMain extends App {
   val system = ActorSystem("HRSys")
   val supervisor = system.actorOf(SupervisorActor.props, "super")
   supervisor ! SupervisorActor.Request(
-    "https://eck.test.technolutions.net/manage/query/run?id=a8274b1a-9860-4f79-91c2-268c27d6338b&h=7215c6fa-ea25-e33d-0d02-5bd30b28f30e&cmd=service&output=json",
-    "davenpcmcustom",
-    "2MG24R\\*,QKC7b_tbJuB"
+    "",
+    "",
+    ""
   )
 
   Thread.sleep(5000)
