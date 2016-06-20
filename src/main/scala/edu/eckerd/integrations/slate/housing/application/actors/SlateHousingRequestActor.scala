@@ -46,7 +46,7 @@ class SlateHousingRequestActor(link: String, userName: String, password: String)
 
   def receive() = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-      log.info("Got Good Status Code Reply")
+//      log.info("Got Good Status Code Reply")
       Unmarshal(entity).to[HousingRequestResponse].pipeTo(context.parent)
       http.shutdownAllConnectionPools()
     case HttpResponse(code, _, _, _) =>

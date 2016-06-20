@@ -19,6 +19,7 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
 
   val termCode = generateTermCode(term)
   private var internalPidm : Option[String] = None
+  private var internalError : Option[Throwable] = None
 
   val dbConfig : DatabaseConfig[JdbcProfile] = edu.eckerd.integrations.slate.housing.application.utils.Database.dbConfig
 
@@ -27,7 +28,7 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
 
     val Request = dbConfig.db.run(getPidm(id)).map{
       case Some(pidm) => BannerHousingRequest(pidm)
-      case None => throw new Throwable("Null Pidm Returned")
+      case None => Error( new Throwable(s"$id - Null Pidm Returned"))
     }
 
     pipe(Request).pipeTo(self)
@@ -35,14 +36,29 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
   }
 
   def receive() = {
+    case StatusRequest =>
+      val status = {
+        if (internalError.isDefined){
+          internalError.get.getMessage
+        } else if (internalPidm.isDefined) {
+          "Pidm Defined with No Error - More Time Needed"
+        } else {
+          "Pidm Not Defined"
+        }
+      }
+      sender() ! status
+
     case BannerHousingRequest(pidm) =>
       internalPidm = Some(pidm)
 //      log.info(s"newBHR - pidm: $pidm, termCode: $termCode")
       val updatedRows = dbConfig.db.run(UpdateStudentHousingRequest(pidm, termCode)).map(Rows)
       pipe(updatedRows).pipeTo(self)
     case Rows(n) =>
-//      log.info(s"$id - $n Rows Effected")
+//      if (n != 1) log.info(s"$id - $n Rows Effected")
+
       context.stop(self)
+    case Error(e) =>
+      internalError = Option(e)
 
   }
 
@@ -64,6 +80,8 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
 }
 
 object BannerHousingRequestActor {
+
+  def props(id: String, term: String) = Props(classOf[BannerHousingRequestActor], id, term)
 
   def generateTermCode(term: String): String = {
     val year = term.takeRight(4)
@@ -87,8 +105,9 @@ object BannerHousingRequestActor {
 
   case object EchoStart
   case object StatusRequest
-  case class Status()
+  case class Status(message: String)
   case class BannerHousingRequest(pidm: String)
+  case class Error(error: Throwable)
   case class Rows(n : Int)
 
 
