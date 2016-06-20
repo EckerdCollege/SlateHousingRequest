@@ -9,7 +9,7 @@ import edu.eckerd.integrations.slate.housing.application.models.HousingRequestRe
 class SupervisorActor extends Actor with ActorLogging {
   import SupervisorActor._
 
-  val getPidmActor = context.actorOf(GetPidmActor.props, "GetPidm")
+  val DBSupervisor = context.actorOf(DatabaseSupervisorActor.props , "DBSupervisor")
 
   def receive() = {
     case Request(link, userName, password) =>
@@ -34,7 +34,8 @@ class SupervisorActor extends Actor with ActorLogging {
         )
       }
     case PidmRequest(id) =>
-      getPidmActor.tell( GetPidmActor.ID(id), sender() )
+      DBSupervisor ! DatabaseSupervisorActor.Function(sender(), DatabaseSupervisorActor.GetPidm , id)
+//      getPidmActor.tell( GetPidmActor.ID(id), sender() )
     case TerminateSys =>
       context.system.terminate()
   }
