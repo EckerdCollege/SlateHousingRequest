@@ -1,6 +1,6 @@
 package edu.eckerd.integrations.slate.housing.application.actors
 
-import akka.actor.{Actor, ActorLogging, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Terminated}
 import edu.eckerd.integrations.slate.housing.application.models.HousingRequestResponse
 
 /**
@@ -9,9 +9,11 @@ import edu.eckerd.integrations.slate.housing.application.models.HousingRequestRe
 class SupervisorActor extends Actor with ActorLogging {
   import SupervisorActor._
 
-  val DBSupervisor = context.actorOf(DatabaseSupervisorActor.props , "DBSupervisor")
+  var Requests = scala.collection.mutable.Set[ActorRef]()
 
   def receive() = {
+    case Terminated(actorRef) =>
+      Requests -= actorRef
     case Request(link, userName, password) =>
       context.actorOf(
         Props(
@@ -24,7 +26,7 @@ class SupervisorActor extends Actor with ActorLogging {
       )
     case HousingRequestResponse(list) =>
       list.foreach{ HousingRequest =>
-        context.actorOf(
+        val child = context.actorOf(
           Props(
             classOf[BannerHousingRequestActor],
             HousingRequest.id,
@@ -32,11 +34,13 @@ class SupervisorActor extends Actor with ActorLogging {
           ),
           name = s"BHRA-${HousingRequest.id}"
         )
+        context.watch(child)
+        Requests += child
       }
-    case PidmRequest(id) =>
-      DBSupervisor ! DatabaseSupervisorActor.Function(sender(), DatabaseSupervisorActor.GetPidm , id)
-//      getPidmActor.tell( GetPidmActor.ID(id), sender() )
+      context.sender() ! PoisonPill
     case TerminateSys =>
+      val currentRequests = Requests.toList.length
+      log.info(s"$currentRequests requests open at termination")
       context.system.terminate()
   }
 }
