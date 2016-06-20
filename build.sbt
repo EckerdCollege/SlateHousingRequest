@@ -19,7 +19,8 @@ libraryDependencies ++= {
     "org.scalatest"     %% "scalatest" % scalaTestV % "test",
     "com.typesafe.slick" %% "slick" % slickV,
     "com.typesafe.slick" %% "slick-extensions" % "3.1.0",
-    "com.typesafe.slick" %% "slick-hikaricp" % slickV
+    "com.typesafe.slick" %% "slick-hikaricp" % slickV,
+    "com.typesafe" % "config" % "1.3.0"
   )
 }
 
