@@ -3,11 +3,10 @@ package edu.eckerd.integrations.slate.housing.application
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import edu.eckerd.integrations.slate.housing.application.actors.SupervisorActor
-import edu.eckerd.integrations.slate.housing.application.actors.SupervisorActor.{Request, TerminateRequest}
+import edu.eckerd.integrations.slate.housing.application.actors.SupervisorActor.Request
 import concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.util.Try
 import concurrent.duration._
 import language.postfixOps
 
@@ -29,22 +28,10 @@ object ApplicationMain extends App {
 
   val recurringRequest = system.scheduler.schedule(
     0 milliseconds,
-    30 seconds,
+    1 minutes,
     supervisor,
     Request(link, user, password)
   )
-
-  val recurringCancel = system.scheduler.schedule(
-    20 seconds,
-    30 seconds,
-    supervisor,
-    TerminateRequest
-  )
-
-//  Thread.sleep(5000)
-
-
-//  supervisor ! SupervisorActor.TerminateRequest
 
   Await.result(system.whenTerminated, Duration.Inf)
 }

@@ -3,6 +3,7 @@ package edu.eckerd.integrations.slate.housing.application.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Terminated}
 import akka.pattern.ask
 import akka.util.Timeout
+import language.postfixOps
 import edu.eckerd.integrations.slate.housing.application.models.HousingRequestResponse
 import concurrent.ExecutionContext.Implicits.global
 import concurrent.{Await, Future}
@@ -13,14 +14,15 @@ import scala.concurrent.duration._
 class SupervisorActor extends Actor with ActorLogging {
   import SupervisorActor._
 
-  var Requests = scala.collection.mutable.Set[ActorRef]()
-
+  var OpenRequests = scala.collection.mutable.Set[ActorRef]()
 
   def receive() = {
-    case Terminated(actorRef) =>
-      Requests -= actorRef
+
     case Request(link, userName, password) =>
-      context.actorOf(
+      OpenRequests.foreach(_ ! SlateHousingRequestActor.TerminateRequest)
+      log.debug(s"Supervisor Request Received for $link")
+
+      val child = context.actorOf(
         Props(
           classOf[SlateHousingRequestActor],
           link,
@@ -28,41 +30,21 @@ class SupervisorActor extends Actor with ActorLogging {
           password
         )
       )
-    case HousingRequestResponse(list) =>
-      list.foreach{ HousingRequest =>
-        val child = context.actorOf(
-          Props(
-            classOf[BannerHousingRequestActor],
-            HousingRequest.id,
-            HousingRequest.term
-          )
-        )
-        context.watch(child)
-        Requests += child
-      }
-      context.sender() ! PoisonPill
-    case TerminateRequest =>
-      implicit val timeout = Timeout(2 seconds)
-      val finalRequests = Requests.toList
-      val currentRequests = finalRequests.length
-//      log.info(s"$currentRequests requests open at termination")
-      val statusOfOpen = finalRequests
-        .map(
-          a => ask(a, BannerHousingRequestActor.StatusRequest).mapTo[String]
-        )
+      OpenRequests += child
+      context.watch(child)
+      val OpenRequestsLength = OpenRequests.toList.length
+      log.info(s"$OpenRequestsLength Open Requests")
+      if (OpenRequestsLength > 2) log.error(s"More than 2 Requests Open - Current : $OpenRequestsLength")
+    case Terminated(actorRef) =>
+      OpenRequests -= actorRef
+      log.info(s"Primary Request $actorRef Terminated")
 
-
-      val f = Future.sequence(statusOfOpen)
-      val statuses = Await.result(f, timeout.duration)
-      finalRequests.zip(statuses).foreach(z => log.error( s"${z._1} - ${z._2}"))
-      Requests.clear()
   }
 }
 
 object SupervisorActor {
   val props = Props[SupervisorActor]
 
-  case object TerminateRequest
   case class Request(link: String, userName: String, password: String)
 
 }
