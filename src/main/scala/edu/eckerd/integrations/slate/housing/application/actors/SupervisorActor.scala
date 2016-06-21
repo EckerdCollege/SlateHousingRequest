@@ -19,7 +19,7 @@ class SupervisorActor extends Actor with ActorLogging {
   def receive() = {
 
     case Request(link, userName, password) =>
-      OpenRequests.foreach(_ ! SlateHousingRequestActor.TerminateRequest)
+//      OpenRequests.foreach(_ ! SlateHousingRequestActor.TerminateRequest)
       log.debug(s"Supervisor Request Received for $link")
 
       val child = context.actorOf(
@@ -33,11 +33,11 @@ class SupervisorActor extends Actor with ActorLogging {
       OpenRequests += child
       context.watch(child)
       val OpenRequestsLength = OpenRequests.toList.length
-      log.info(s"$OpenRequestsLength Open Requests")
-      if (OpenRequestsLength > 2) log.error(s"More than 2 Requests Open - Current : $OpenRequestsLength")
+      log.debug(s"$OpenRequestsLength Open Requests")
+      if (OpenRequestsLength > 5) log.error(s"More than 5 Requests Open - Current : $OpenRequestsLength")
     case Terminated(actorRef) =>
       OpenRequests -= actorRef
-      log.info(s"Primary Request $actorRef Terminated")
+      log.debug(s"Primary Request $actorRef Terminated")
 
   }
 }

@@ -3,17 +3,21 @@ package edu.eckerd.integrations.slate.housing.application.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Terminated}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, headers}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import spray.json.DefaultJsonProtocol
 import edu.eckerd.integrations.slate.housing.application.models.HousingRequest
 import edu.eckerd.integrations.slate.housing.application.models.HousingRequestResponse
+
 import scala.concurrent.duration._
 import language.postfixOps
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.util.Timeout
 import akka.pattern.ask
+import akka.stream._
+import akka.stream.scaladsl._
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.concurrent.{Await, Future}
 
@@ -31,36 +35,55 @@ class SlateHousingRequestActor(link: String, userName: String, password: String)
   import context.dispatcher
 
   final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
-  val http = Http(context.system)
+
+
+  val https = Http(context.system)
+    .outgoingConnectionHttps("eck.test.technolutions.net")
+    .mapAsync(1){ r =>
+      val hr = Unmarshal(r).to[HousingRequestResponse]
+      pipe(hr).pipeTo(context.self)
+    }
+    .to(Sink.ignore)
 
   var Requests = scala.collection.mutable.Set[ActorRef]()
+
 
 
   override def preStart() = {
     val authorization = headers.Authorization(
       BasicHttpCredentials(userName, password)
     )
-    http.singleRequest(
+
+    val slateSource = Source.single(
       HttpRequest(
         uri = link,
         headers = List(authorization)
       )
-    ).pipeTo(self)
+    )
 
+    val future = slateSource.runWith(https)
+    Await.result(future, Duration(2, SECONDS))
 
   }
 
 
   def receive() = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-//      log.info("Got Good Status Code Reply")
       Unmarshal(entity).to[HousingRequestResponse].pipeTo(context.self)
-      http.shutdownAllConnectionPools()
     case HttpResponse(code, _, _, _) =>
-      log.error("Invalid Status Code: " + code)
-      http.shutdownAllConnectionPools()
+      val codeVal = code.value
+      if (codeVal != "500 Internal Server Error"){
+        log.error("Invalid Status Code: " + codeVal)
+
+      } else {
+        log.debug(s"Server Failure : $codeVal")
+      }
+      context.self ! PoisonPill
+
+
     case Terminated(actorRef) =>
       Requests -= actorRef
+      context.self ! CheckFinished
     case HousingRequestResponse(list) =>
       list.foreach{ HousingRequest =>
         val child = context.actorOf(
@@ -73,24 +96,12 @@ class SlateHousingRequestActor(link: String, userName: String, password: String)
         context.watch(child)
         Requests += child
       }
-    case TerminateRequest =>
-      implicit val timeout = Timeout(2 seconds)
-      val finalRequests = Requests.toList
-      val currentRequests = finalRequests.length
-      log.debug(s"$currentRequests requests open at termination")
-      val statusOfOpen = finalRequests
-        .map(
-          a => ask(a, BannerHousingRequestActor.StatusRequest).mapTo[String]
-        )
-      val f = Future.sequence(statusOfOpen)
-      val statuses = Await.result(f, timeout.duration)
-      finalRequests.zip(statuses).foreach(z => log.error( s"${z._1} - ${z._2}"))
-      Requests.clear()
-      context.self ! PoisonPill
-    case a =>
-      log.error(a.toString)
-      log.error("Unknown Message Received")
-      http.shutdownAllConnectionPools()
+    case HRFinishedSuccessfully =>
+      context.sender() ! PoisonPill
+    case HRFinishedWithErrors =>
+      context.sender() ! PoisonPill
+    case CheckFinished =>
+      if (Requests.isEmpty) context.self ! PoisonPill
   }
 }
 
@@ -98,6 +109,7 @@ object SlateHousingRequestActor {
 
   case object CheckFinished
   case object TerminateRequest
-//  val props = Props(SlateHousingRequestActor]
-//  case class HttpResponse(status: StatusCode, headers: Seq[HttpHeader], entity: ResponseEntity, protocol: HttpProtocol)
+
+  case object HRFinishedSuccessfully
+  case object HRFinishedWithErrors
 }

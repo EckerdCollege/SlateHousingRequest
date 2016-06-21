@@ -1,3 +1,5 @@
+enablePlugins(JavaAppPackaging)
+
 name := "SlateHousingRequest"
 organization := "edu.eckerd"
 version := "1.0"
@@ -28,3 +30,12 @@ libraryDependencies ++= {
 
 unmanagedBase := baseDirectory.value / ".lib"
 resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/maven-releases/"
+
+mainClass in Compile := Some("edu.eckerd.integrations.slate.housing.application.ApplicationMain")
+
+mappings in Universal += {
+  // we are using the reference.conf as default application.conf
+  // the user can override settings here
+  val conf = sourceDirectory.value / "main" / "resources" / "application.conf"
+  conf -> "conf/application.conf"
+}

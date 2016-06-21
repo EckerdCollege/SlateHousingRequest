@@ -36,31 +36,17 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
   }
 
   def receive() = {
-    case StatusRequest =>
-      val status = {
-        if (internalError.isDefined){
-          internalError.get.getMessage
-        } else if (internalPidm.isDefined) {
-          "Pidm Defined with No Error - More Time Needed"
-        } else {
-          "Pidm Not Defined"
-        }
-      }
-      sender() ! status
-
+    case Error(e) =>
+      internalError = Option(e)
+      log.error(e.getMessage)
+      context.parent ! SlateHousingRequestActor.HRFinishedWithErrors
     case BannerHousingRequest(pidm) =>
       internalPidm = Some(pidm)
       log.debug(s"newBHR - pidm: $pidm, termCode: $termCode")
       val updatedRows = dbConfig.db.run(UpdateStudentHousingRequest(pidm, termCode)).map(Rows)
-//      val updatedRows = dbConfig.db.run(DebugResult(pidm, termCode)).mapTo[Rows]
-
       pipe(updatedRows).pipeTo(context.self)
     case Rows(n) =>
-//      if (n != 1) log.info(s"$id - $n Rows Effected")
-
-      context.stop(context.self)
-    case Error(e) =>
-      internalError = Option(e)
+      context.parent ! SlateHousingRequestActor.HRFinishedSuccessfully
 
   }
 
@@ -70,13 +56,13 @@ class BannerHousingRequestActor(id: String, term: String) extends Actor with Act
       WHERE
       SARADAP_PIDM = (${pidm})
       AND SARADAP_TERM_CODE_ENTRY = (${termCode})
-      AND (SARADAP_SITE_CODE = 'D' OR SARADAP_SITE_CODE = 'DA')"""
+      AND SARADAP_SITE_CODE = 'D'"""
   }
 
   def DebugResult(pidm: String, termCode: String): DBIO[Int] = {
     sql"""SELECT COUNT(*) WHERE SARADAP_PIDM = (${pidm})
       AND SARADAP_TERM_CODE_ENTRY = (${termCode})
-      AND (SARADAP_SITE_CODE = 'D' OR SARADAP_SITE_CODE = 'DA')""".as[Int].head
+      AND SARADAP_SITE_CODE = 'D'""".as[Int].head
   }
 
   def getPidm(id: String): DBIO[Option[String]] ={
