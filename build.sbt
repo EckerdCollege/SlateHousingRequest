@@ -2,7 +2,9 @@ enablePlugins(JavaAppPackaging)
 
 name := "SlateHousingRequest"
 organization := "edu.eckerd"
-version := "1.0"
+version := "0.1.0"
+maintainer := "Christopher Davenport <ChristopherDavenport@outlook.com>"
+packageSummary := "Transfers Housing Requests from Slate Into Banner"
 
 scalaVersion := "2.11.8"
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
@@ -33,9 +35,10 @@ resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/maven-rel
 
 mainClass in Compile := Some("edu.eckerd.integrations.slate.housing.application.ApplicationMain")
 
-mappings in Universal += {
-  // we are using the reference.conf as default application.conf
-  // the user can override settings here
-  val conf = sourceDirectory.value / "main" / "resources" / "application.conf"
-  conf -> "conf/application.conf"
-}
+mappings in Universal ++= Seq(
+  sourceDirectory.value / "main" / "resources" / "application.conf" -> "conf/application.conf",
+  sourceDirectory.value / "main" / "resources" / "logback.xml" -> "conf/logback.xml"
+)
+
+rpmVendor := "Eckerd College"
+rpmLicense := Some("Apache 2.0")
