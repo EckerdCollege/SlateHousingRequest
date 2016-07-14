@@ -38,6 +38,10 @@ class SupervisorActor extends Actor with ActorLogging {
     case Terminated(actorRef) =>
       OpenRequests -= actorRef
       log.debug(s"Primary Request $actorRef Terminated")
+      if (OpenRequests.isEmpty) {
+        context.system.terminate()
+        log.debug("ActorSystem Terminated")
+      }
 
   }
 }
