@@ -31,9 +31,7 @@ trait HousingRequestMethods {
       val key = term.drop(5)
       val codeEnd = TERM_CODE_MAP.get(key)
       val termCode = codeEnd.map(year + _)
-      val x = Xor.fromOption(termCode, s"Invalid Term - $housingRequest")
-      println(x)
-      x
+      Xor.fromOption(termCode, s"Invalid Term - $housingRequest")
   }
 
   def generatePidm(optPidm: Option[String], housingRequest: HousingRequest): Xor[String, String] = {

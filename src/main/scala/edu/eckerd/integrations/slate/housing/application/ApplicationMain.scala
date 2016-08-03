@@ -5,6 +5,10 @@ import java.sql.Timestamp
 import cats.implicits._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import cats.data.Xor
+import cats.data.Xor.Left
+import cats.data.Xor.Right
+import com.typesafe.scalalogging.LazyLogging
 import edu.eckerd.integrations.slate.housing.application.methods.HousingRequestMethods
 import edu.eckerd.integrations.slate.housing.application.persistence.{DBFunctions, HasDB}
 import edu.eckerd.integrations.slate.core.Request
@@ -12,6 +16,7 @@ import edu.eckerd.integrations.slate.housing.application.models.{HousingAgreemen
 import slick.backend.DatabaseConfig
 import slick.driver.JdbcProfile
 import edu.eckerd.integrations.slate.housing.application.request.HousingJsonProtocol._
+
 import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -19,7 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * Created by davenpcm on 6/17/16.
   */
-object ApplicationMain extends App {
+object ApplicationMain extends App with LazyLogging {
   object HousingAgreementHandler extends HousingRequestMethods with DBFunctions with HasDB {
     override implicit val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("oracle")
     override def pidmResponder: this.PidmResponder = getPidmFromBannerID
@@ -41,9 +46,9 @@ object ApplicationMain extends App {
     .retrieve()
     .flatMap(Future.traverse(_)(HousingAgreementHandler.UpdateDatabase))
 
-//  val currentStudentHousingAgreementRequest = Request.forConfig[HousingAgreement]("currentStudentHousingAgreement")
-//    .retrieve()
-//    .flatMap(Future.traverse(_)(HousingAgreementHandler.UpdateDatabase))
+  val currentStudentHousingAgreementRequest = Request.forConfig[HousingAgreement]("currentStudentHousingAgreement")
+    .retrieve()
+    .flatMap(Future.traverse(_)(HousingAgreementHandler.UpdateDatabase))
 
   val housingApplicationRequest = Request.forConfig[HousingApplication]("housingApplication")
     .retrieve()
@@ -52,12 +57,17 @@ object ApplicationMain extends App {
   val f = for {
     seq <- housingApplicationRequest
     seq2 <- newStudentHousingAgreementRequest
+    seq3 <- currentStudentHousingAgreementRequest
     _ <- system.terminate()
   } yield{
-    val l = seq.toList ::: seq2.toList
+    val l = seq.toList ::: seq2.toList ::: seq3.toList
     for{
       xor <- l
-    } yield println(xor)
+    } yield xor match {
+      case Left(value) =>
+        logger.info(s"$value")
+      case _ => ()
+    }
   }
 
   Await.result(f, 30.seconds)
