@@ -18,7 +18,8 @@ libraryDependencies ++= {
     "com.typesafe.slick" %% "slick" % slickV,
     "com.typesafe.slick" %% "slick-extensions" % "3.1.0",
     "com.typesafe.slick" %% "slick-hikaricp" % slickV,
-    "ch.qos.logback" % "logback-classic" % "1.1.3"
+    "ch.qos.logback" % "logback-classic" % "1.1.3",
+    "org.typelevel" %% "cats" % "0.6.1"
   )
 }
 
