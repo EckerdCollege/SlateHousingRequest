@@ -49,11 +49,41 @@ trait HousingRequestMethods {
   }
 
   lazy val TERM_CODE_MAP: Map[String, String] = Map(
+    "AUTUMN" -> "10",
     "Autumn" -> "10",
+    "autumn" -> "10",
+    "AUTUMN TERM" -> "10",
     "Autumn Term" -> "10",
+    "Autumn term" -> "10",
+    "autumn term" -> "10",
+    "FALL" -> "10",
     "Fall" -> "10",
+    "fall" -> "10",
+    "FALL TERM" -> "10",
+    "Fall Term" -> "10",
+    "Fall term" -> "10",
+    "fall term" -> "10",
+    "WINTER" -> "20",
+    "Winter" -> "20",
+    "winter" -> "20",
+    "WINTER TERM" -> "20",
     "Winter Term" -> "20",
-    "Spring" -> "20"
+    "Winter term" -> "20",
+    "winter term" -> "20",
+    "SPRING" -> "20",
+    "Spring" -> "20",
+    "spring" -> "20",
+    "SPRING TERM" -> "20",
+    "Spring Term" -> "20",
+    "Spring term" -> "20",
+    "spring term" -> "20",
+    "SUMMER" -> "30",
+    "Summer" -> "30",
+    "summer" -> "30",
+    "SUMMER TERM" -> "30",
+    "Summer Term" -> "30",
+    "Summer term" -> "30",
+    "summer term" -> "30"
   )
 
   def xorFutureConverter[A, B](xor: Xor[B, Future[A]])
