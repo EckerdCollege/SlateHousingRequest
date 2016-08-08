@@ -62,7 +62,8 @@ trait DBFunctions {
     sqlu"""UPDATE SLBRMAP
            SET SLBRMAP_ARTP_CODE='HMAP'
            WHERE SLBRMAP_PIDM = $pidm
-           AND SLBRMAP_FROM_TERM = $termCode"""
+           AND SLBRMAP_FROM_TERM = $termCode
+           AND SLBRMAP_ARTP_CODE <> 'HMAP'"""
   }
 
 
