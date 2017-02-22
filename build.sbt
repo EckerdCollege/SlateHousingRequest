@@ -20,6 +20,7 @@ libraryDependencies ++= {
     "com.typesafe.slick" %% "slick-hikaricp" % slickV,
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
+    "com.h2database" % "h2" % "1.4.187" % "test",
     "org.typelevel" %% "cats" % "0.6.1"
   )
 }

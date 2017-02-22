@@ -32,6 +32,14 @@ trait DBFunctions {
     db.run(newAction)
   }
 
+  /**
+    * This executes the updateStudentHousingApplication Action
+    * @param pidm The pidm to change
+    * @param termCode The term code to update
+    * @param ec The execution context to fork from
+    * @param db The database to modify
+    * @return An int corresponding to the number of rows affecting after it has returned from the database
+    */
   def UpdateStudentHousingApplication(pidm: String, termCode: String)
                                      (implicit ec: ExecutionContext,
                                       db: JdbcProfile#Backend#Database): Future[Int] = {
@@ -39,6 +47,14 @@ trait DBFunctions {
     db.run(action)
   }
 
+  /**
+    * This executes the updateStudentHousingAgreement Action
+    * @param pidm The pidm to change
+    * @param termCode The term code to update
+    * @param ec The execution context to fork from
+    * @param db The database to modify
+    * @return An int corresponding to the number of rows affecting after it has returned from the database
+    */
   def UpdateStudentHousingAgreement(pidm: String, termCode: String)
                                    (implicit ec:ExecutionContext,
                                     db: JdbcProfile#Backend#Database): Future[Int] = {
@@ -46,6 +62,13 @@ trait DBFunctions {
     db.run(action)
   }
 
+  /**
+    * This is the DBIO operation for updating the student housing application. It transitions for a given student
+    * and a given term code entry their site code from D to DA.
+    * @param pidm The pidm to update
+    * @param termCode The term to update for
+    * @return An int corresponding to the number of rows affected. Should be 1 or 0.
+    */
   def updateStudentHousingApplicationAction(pidm: String, termCode: String)
                                            : DBIO[Int] = {
     import profile.api._
@@ -57,6 +80,14 @@ trait DBFunctions {
       AND SARADAP_SITE_CODE = 'D'"""
   }
 
+  /**
+    * This is the DBIO operation for updating the Student Housing Agreement. It transitions toe ARTP_CODE to "HMAP"
+    * and we guarantee this only happens if it is not already in HMAP. We specify the individual using PIDM and
+    * FROM_TERM
+    * @param pidm The pidm of the user the alter
+    * @param termCode The term code to alter for
+    * @return An Int corresponding to the number of rows affected. 0 or 1.
+    */
   def updateStudentHousingAgreementAction(pidm: String, termCode: String): DBIO[Int] = {
     import profile.api._
     sqlu"""UPDATE SLBRMAP

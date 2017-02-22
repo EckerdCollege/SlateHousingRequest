@@ -25,6 +25,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by davenpcm on 6/17/16.
   */
 object ApplicationMain extends App with LazyLogging {
+
+  /**
+    * This is where we mix and match our DB functions and mutable state seperately for the two types because
+    * our application handles them the same except for the endpoint they update.
+    */
   object HousingAgreementHandler extends HousingRequestMethods with DBFunctions with HasDB {
     override implicit val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("oracle")
     override def pidmResponder: this.PidmResponder = getPidmFromBannerID
@@ -39,6 +44,11 @@ object ApplicationMain extends App with LazyLogging {
     override def updateResponder: UpdateResponder = UpdateStudentHousingApplication
   }
 
+
+  /**
+    * This is where we see what is essentially a linear script as The three processess occur in parralel and wait
+    * till they are all complete to terminate the actor system and log any errors that occur.
+    */
   implicit val system = ActorSystem("HousingSystem")
   implicit val materializer = ActorMaterializer()
 
