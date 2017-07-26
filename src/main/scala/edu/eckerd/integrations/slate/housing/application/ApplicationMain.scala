@@ -68,7 +68,8 @@ object ApplicationMain extends App with LazyLogging {
     } yield either match {
       case Left(value) =>
         logger.info(s"$value")
-      case _ => ()
+      case Right(int) =>
+        logger.trace(s"Rows Altered - $int")
     }
   }
 
