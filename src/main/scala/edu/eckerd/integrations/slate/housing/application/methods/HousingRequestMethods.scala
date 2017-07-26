@@ -44,7 +44,7 @@ trait HousingRequestMethods extends LazyLogging {
   def generateTermCode(housingRequest: HousingRequest):Either[String,String] = housingRequest match {
     case _: HousingApplication =>
       val term = housingRequest.term
-      val year = term.takeRight(4)
+      val year = term.take(4)
       val key = term.drop(5)
       val codeEnd = TERM_CODE_MAP.get(key)
       val termCode = codeEnd.map(year + _)
