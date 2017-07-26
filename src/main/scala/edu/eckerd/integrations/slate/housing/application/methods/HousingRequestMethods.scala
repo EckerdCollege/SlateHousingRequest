@@ -2,11 +2,12 @@ package edu.eckerd.integrations.slate.housing.application.methods
 
 import scala.concurrent.{ExecutionContext, Future}
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import edu.eckerd.integrations.slate.housing.application.models.{HousingAgreement, HousingApplication, HousingRequest}
 /**
   * Created by davenpcm on 8/2/16.
   */
-trait HousingRequestMethods {
+trait HousingRequestMethods extends LazyLogging {
 
   /**
     * These are our responders or if you will our interfaces to external data, as well as time because time keeps
@@ -83,7 +84,10 @@ trait HousingRequestMethods {
     } yield for {
       term <- generateTermCode(housingRequest)
       pidm <- generatePidm(optPidm, housingRequest)
-    } yield updateResponder(pidm, term)
+    } yield {
+      logger.trace(s"Before updateResponder - Request=$housingRequest, Term=$term, Pidm=$pidm")
+      updateResponder(pidm, term)
+    }
     futureXorRightFutureConverter(f)
   }
 
