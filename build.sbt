@@ -13,7 +13,7 @@ libraryDependencies ++= {
   val scalaTestV  = "3.0.0"
   val slickV = "3.1.1"
   Seq(
-    "edu.eckerd"        %% "slate-core" % "0.1.0",
+    "edu.eckerd"        %% "slate-core" % "0.1.1",
     "org.scalatest"     %% "scalatest" % scalaTestV % "test",
     "com.typesafe.slick" %% "slick" % slickV,
     "com.typesafe.slick" %% "slick-extensions" % "3.1.0",
@@ -21,7 +21,7 @@ libraryDependencies ++= {
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
     "com.h2database" % "h2" % "1.4.187" % "test",
-    "org.typelevel" %% "cats" % "0.6.1"
+    "org.typelevel" %% "cats" % "0.9.0"
   )
 }
 

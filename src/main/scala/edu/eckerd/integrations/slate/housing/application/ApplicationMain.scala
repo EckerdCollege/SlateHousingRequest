@@ -5,9 +5,6 @@ import java.sql.Timestamp
 import cats.implicits._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import cats.data.Xor
-import cats.data.Xor.Left
-import cats.data.Xor.Right
 import com.typesafe.scalalogging.LazyLogging
 import edu.eckerd.integrations.slate.housing.application.methods.HousingRequestMethods
 import edu.eckerd.integrations.slate.housing.application.persistence.{DBFunctions, HasDB}
@@ -56,10 +53,6 @@ object ApplicationMain extends App with LazyLogging {
     .retrieve()
     .flatMap(Future.traverse(_)(HousingAgreementHandler.UpdateDatabase))
 
-  val currentStudentHousingAgreementRequest = Request.forConfig[HousingAgreement]("currentStudentHousingAgreement")
-    .retrieve()
-    .flatMap(Future.traverse(_)(HousingAgreementHandler.UpdateDatabase))
-
   val housingApplicationRequest = Request.forConfig[HousingApplication]("housingApplication")
     .retrieve()
     .flatMap(Future.traverse(_)(HousingApplicationHandler.UpdateDatabase))
@@ -67,13 +60,12 @@ object ApplicationMain extends App with LazyLogging {
   val f = for {
     seq <- housingApplicationRequest
     seq2 <- newStudentHousingAgreementRequest
-    seq3 <- currentStudentHousingAgreementRequest
     _ <- system.terminate()
   } yield{
-    val l = seq.toList ::: seq2.toList ::: seq3.toList
+    val l = seq.toList ::: seq2.toList
     for{
-      xor <- l
-    } yield xor match {
+      either <- l
+    } yield either match {
       case Left(value) =>
         logger.info(s"$value")
       case _ => ()
