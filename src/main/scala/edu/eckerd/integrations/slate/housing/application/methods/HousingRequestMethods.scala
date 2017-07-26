@@ -2,8 +2,6 @@ package edu.eckerd.integrations.slate.housing.application.methods
 
 import scala.concurrent.{ExecutionContext, Future}
 import cats.implicits._
-import cats.Applicative._
-import cats.data.Xor
 import edu.eckerd.integrations.slate.housing.application.models.{HousingAgreement, HousingApplication, HousingRequest}
 /**
   * Created by davenpcm on 8/2/16.
@@ -42,21 +40,21 @@ trait HousingRequestMethods {
     * @return An Xor on the Left is a string containing any errors and on the right a string representing a valid
     *         term code
     */
-  def generateTermCode(housingRequest: HousingRequest):Xor[String,String] = housingRequest match {
+  def generateTermCode(housingRequest: HousingRequest):Either[String,String] = housingRequest match {
     case _: HousingApplication =>
       val term = housingRequest.term
       val year = term.takeRight(4)
-      val key = term.dropRight(5)
+      val key = term.drop(5)
       val codeEnd = TERM_CODE_MAP.get(key)
       val termCode = codeEnd.map(year + _)
-      Xor.fromOption(termCode, s"Invalid Term - $housingRequest")
+      Either.fromOption(termCode, s"Invalid Term - $housingRequest")
     case _ : HousingAgreement =>
       val term = housingRequest.term
       val year = term.take(4)
       val key = term.drop(5)
       val codeEnd = TERM_CODE_MAP.get(key)
       val termCode = codeEnd.map(year + _)
-      Xor.fromOption(termCode, s"Invalid Term - $housingRequest")
+      Either.fromOption(termCode, s"Invalid Term - $housingRequest")
   }
 
   /**
@@ -67,8 +65,8 @@ trait HousingRequestMethods {
     * @param housingRequest The original housing request that we are looking to process
     * @return
     */
-  def generatePidm(optPidm: Option[String], housingRequest: HousingRequest): Xor[String, String] = {
-    Xor.fromOption(optPidm, s"NonExistent Pidm - $housingRequest")
+  def generatePidm(optPidm: Option[String], housingRequest: HousingRequest): Either[String, String] = {
+    Either.fromOption(optPidm, s"NonExistent Pidm - $housingRequest")
   }
 
   /**
@@ -79,7 +77,7 @@ trait HousingRequestMethods {
     * @param ec The execution context as this will fork off as multiple housing requests are processed
     * @return The return is a Future Xor of String(containing any errors) or Int(How many rows affected)
     */
-  def UpdateDatabase(housingRequest: HousingRequest)(implicit ec: ExecutionContext): Future[Xor[String, Int]] = {
+  def UpdateDatabase(housingRequest: HousingRequest)(implicit ec: ExecutionContext): Future[Either[String, Int]] = {
     val f = for {
       optPidm <- pidmResponder(housingRequest.id)
     } yield for {
@@ -101,8 +99,8 @@ trait HousingRequestMethods {
     *           defeat the purpose.
     * @return A Future[Xor[B,A]] - Beautiful as we can work on the event as a whole.
     */
-  def futureXorRightFutureConverter[A,B](future: Future[Xor[B, Future[A]]])
-                                        (implicit ec: ExecutionContext): Future[Xor[B, A]] = for {
+  def futureXorRightFutureConverter[A,B](future: Future[Either[B, Future[A]]])
+                                        (implicit ec: ExecutionContext): Future[Either[B, A]] = for {
     xor <- future
     result <- xor.bimap((a) => Future.successful(a), (b) => b).bisequence
   } yield result
